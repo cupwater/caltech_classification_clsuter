@@ -1,0 +1,134 @@
+# 机器学习实验报告——caltech102图像分类
+
+```
+小组成员：
+彭宝云，16069009
+程鹏  ，160690**
+```
+-------------------
+
+[TOC]
+
+## 实验概述
+
+使用机器学习方法对图像集[Caltech102](https://www.vision.caltech.edu/Image_Datasets/Caltech101/)进行分类，Caltech102是一个带标签的图像分类数据集，9145张图片，分属于102中物体类别，每个类别包含的图片数量从40到800不等，该数据集是在2003年由Fei-Fei Li, Marco Andreetto 和 Marc Aurelio Ranzato等人发布。图像大小基本都在 300 x 200左右。图像集地址:
+https://www.vision.caltech.edu/Image_Datasets/Caltech101/
+![Alt text](./caltech.png)
+
+
+## 实验要求
+设计一个分类方法，区分一类图像与其他类图像。给出实验代码，给出实验结果并对结果进行详细解释。
+``` python
+@requires_authorization
+def somefunc(param1='', param2=0):
+    '''A docstring'''
+    if param1 > param2: # interesting
+        print 'Greater'
+    return (param2 - param1 + 1) or None
+class SomeClass:
+    pass
+>>> message = '''interpreter
+... prompt'''
+```
+## 实验设计与具体步骤
+
+方法流程：图像采用卷积神经网络CNN对图像提取特征，再使用支持向量机对图像进行分类。
+
+### 构建训练集和测试集
+制作训练集和测试集的list文件（test_list.txt, test_list.txt），文件内容包含每一图片路径和类别，如下：
+```
+data/101_ObjectCategories/headphone/image_0028.jpg 0
+data/101_ObjectCategories/headphone/image_0030.jpg 0
+data/101_ObjectCategories/headphone/image_0011.jpg 0
+...
+data/101_ObjectCategories/binocular/image_0017.jpg 101
+data/101_ObjectCategories/binocular/image_0026.jpg 101
+data/101_ObjectCategories/binocular/image_0025.jpg 101
+``` 
+该 list 文件将被用在微调卷积网络中，指示输入的图片数据。
+训练集和测试集比例分别为 0.7 : 0.3 ，训练集用训练模型，测试集验证模型的分类性能。
+
+### CNN对图像提取特征
+ 直接使用图像进行分类不可行，一般做法都是先使用特征提取方法对图像进行特征提取，形成特征向量后，再使用分类器来对特征向量进行训练和分类。传统常用的特征提取方法有Haar，HOG，SIFT 和 LBP， 这类方法提取的特征都是手工设计的。本实验中采用CNN来对图像进行特征提取。想比与传统的特征提取方法，CNN特征提取的特征是通过数据学习出来的，分类效果比SIFT等方法要好很多。
+
+但是CNN的一个缺点在于，需要大量的数据来对模型进行训练，其计算量非常大。通常采用预训练 + 微调网络来解决，即使用经过了预训练网络的权重来初始化需要训练的模型，然后使用少量数据来对网络进行微调。
+
+本实验中，采用的网络模型为CaffeNet，CaffeNet是 Caffe 开发团队在ALexNet基础上进行修改，使用百万级图片经过30多万次迭代后得到其网络权重，其网络结构对比如下，它们的区别在于norm1，pool1，以及norm2，pool2互换了顺序：
+![Alt text](./caffenet.jpg)
+
+共有八层，其中前五层为卷积层，后三层为全连接层，最后一个全连接层输出有1000个节点的softmax，其最后的优化目标是最大化平均的multinomial logistic regression：
+ 
+$$	L(f(x_i, y_i)) = -\sum_{i=1}^{n}1(y_i==k)\log P(y_i==k|x_i) $$
+
+为了适应本实验任务，即对102类物体进行分类，我们修改了CaffeNet的 fc-8 层为102节点，即对应 Caltech-102 类别数目。
+
+### 特征提取流程
+1. 利用caffe提供的convert_image 工具将 train images 和 test images 转化成 lmdb 格式，这么做的效率是提高数据的读写速度，并且得到符号CaffeNet输入格式的数据。
+```
+$./build/tools/convert_imageset  ./ train_lists.txt  train_lmdb  -resize_width=227 -resize_height=227 
+$ ./build/tools/convert_imageset  ./ test_lists.txt  test_lmdb  -resize_width=227 -resize_height=227 
+```
+2. 分别计算训练集和测试集的均值文件，同样利用了CaffeNet工具：
+```
+ $ ./build/tools/compute_image_mean train_lmdb/ train_mean.binaryproto
+ $ ./build/tools/compute_image_mean train_lmdb/ train_mean.binaryproto
+```
+3. 修改后的CaffeNet进行微调。
+```
+$ ./build/tools/caffe train --solver solver.prototxt --weights bvlc_reference_caffenet.caffemodel
+```
+其中，--solver参数指定了魔性训练配置文件，内容如下：
+```
+net: "train_val.prototxt"
+test_iter: 50
+test_interval: 50
+base_lr: 0.001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 10000
+display: 200
+max_iter: 3000
+momentum: 0.9
+weight_decay: 0.0005
+snapshot: 1000
+snapshot_prefix: "caffenet_train"
+solver_mode: GPU
+```
+其中，train_val.prototxt 定义了训练网络结构。最大迭代次数设定为3000。采用GPU进行训练，得到模型权重 caffenet_train.caffemodel，其test accuracy 为91.34%， test loss为 0.403. 
+4. 应用fine-tune后的网络模型来对训练集和测试集进行提取特征
+```
+$./build/tools/extract_features.bin caffenet_train.caffemodel imagenet_val.prototxt fc7 features 50 lmdb
+```
+这样，我们得到了训练集和测试集的特征数据train_features 和 test_features， 数据格式为lmdb。下一步，我们将采用多分类SVM来对其进行分类。
+##多分类SVM实现
+
+### 表格
+| Item      |    Value | Qty  |
+| :-------- | --------:| :--: |
+| Computer  | 1600 USD |  5   |
+| Phone     |   12 USD |  12  |
+| Pipe      |    1 USD | 234  |
+
+### 流程图
+```flow
+st=>start: Start
+e=>end
+op=>operation: My Operation
+cond=>condition: Yes or No?
+
+st->op->cond
+cond(yes)->e
+cond(no)->op
+```
+
+以及时序图:
+
+```sequence
+Alice->Bob: Hello Bob, how are you?
+Note right of Bob: Bob thinks
+Bob-->Alice: I am good thanks!
+```
+
+---------
+感谢阅读这份帮助文档。请点击右上角，绑定印象笔记账号，开启全新的记录与分享体验吧。
+

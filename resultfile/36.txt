@@ -1,0 +1,11 @@
+data/101_ObjectCategories/ant/image_0010.jpg
+data/101_ObjectCategories/helicopter/image_0081.jpg
+data/101_ObjectCategories/helicopter/image_0014.jpg
+data/101_ObjectCategories/helicopter/image_0083.jpg
+data/101_ObjectCategories/helicopter/image_0062.jpg
+data/101_ObjectCategories/helicopter/image_0051.jpg
+data/101_ObjectCategories/helicopter/image_0020.jpg
+data/101_ObjectCategories/helicopter/image_0030.jpg
+data/101_ObjectCategories/helicopter/image_0034.jpg
+data/101_ObjectCategories/helicopter/image_0016.jpg
+data/101_ObjectCategories/helicopter/image_0009.jpg

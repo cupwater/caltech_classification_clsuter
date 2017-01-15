@@ -1,0 +1,5 @@
+caltech_features/
+data/
+model/
+test_features/
+train_features/
