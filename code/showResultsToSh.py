@@ -58,19 +58,26 @@ def load_image_list(images_list_file_name):
 
 def computeResult(resultPath):
     image_name_list_file = open(resultPath)
+    print resultPath
     result_list = []
     line = image_name_list_file.readline()
     while line:
+        print line
         result_list.append(line)
         line = image_name_list_file.readline()
     image_name_list_file.close()
-
+    if len(result_list) == 0:
+        return 0, 0
+    #print result_list
     result_list = sorted(result_list)
+    #print result_list
     num = len(result_list)
     maxNum = 1
     currentNum = 0
+    print num
     lastClass = result_list[0]
     lastClass = lastClass.split('/')
+    print lastClass
     lastClass = lastClass[2]
     for i in range(num-1):
         currentClass = result_list[i]
@@ -87,11 +94,13 @@ def computeResult(resultPath):
     return maxNum, num
 
 # imagename_list = load_image_list("caltech.txt")
-# indexlist = load_indexlist("clusterAssment.txt")
+# indexlist = load_indexlist("pcaclusterAssment.txt")
 # filelist = mkresultfilelist(102)
 # writeResultTotxt(filelist, indexlist, imagename_list)
 
 #currentNum, num = computeResult("resultfile/0.txt")
+
+
 def computeRate(path):
     list2_dirs = os.walk(path)
     rightnum = 0

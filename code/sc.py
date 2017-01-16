@@ -107,47 +107,33 @@ def load_data( datafile, labelfile):
 
 def rand_hex(number):
 	colors = []
-	for index in range(number):
-		r, g, b = (random.randint(16, 255), random.randint(1, 255), random.randint(1, 255))
+	for index in range(number - 1):
+		r, g, b = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 		temp = (r << 16) + (g << 8) + b
-		temp = hex(temp)
-		temp = temp[2:8]
-		colors.append('#' + temp)
-		#print temp
+		colors.append('#' + str(temp))
 	
 	return colors
 
 
 #画出聚类结果，每一类用一种颜色
 def visualization_result(dataset, clusterAssment):
-	colors = rand_hex(102)
+	colors = random(102)
 	clusterAssment = clusterAssment.astype(int)
+	dataset = pca(dataset, 2)
 	datanum = dataset.shape[0]
-	print datanum
-	col1 = dataset[:,0]
-	maxX = col1.max()
-	minX = col1.min()
-	col2 = dataset[:,1]
-	minY = col2.min()
-	maxY = col2.max()
-	print maxX, minX, maxY, minY
 	for index in range(datanum-1):
 		x0 = dataset[index,0]
 		x1 = dataset[index,1]
 		label = clusterAssment[index,0]
-		print label
-		plt.text(x0, x1, str(int(label)), color=colors[label], fontdict={'weight': 'bold', 'size': 7})
+		plt.text(x0[j],x1[j],str(int(label[j])),color=colors[i],fontdict={'weight': 'bold', 'size': 7})
 		#plt.scatter(cents[i,0],cents[i,1],marker='x',color=colors[i],linewidths=12)
 	plt.title("cluster results")
-	plt.axis([minX, maxX,minY,maxY])
+	#plt.axis([-30,30,-30,30])
 	plt.savefig('clusterResult.png')
 
 
 dataset, labels = load_data(data_file, label_file)
 dataset = mat(dataset)
-# clusterAssment = np.zeros(shape=(9145,2))
-# visualization_result(dataset, clusterAssment)
-
 start = time.clock()
 dataset = pca(dataset, 128)
 end = time.clock()
@@ -160,6 +146,5 @@ print end-start
 np.savetxt("pcacenter.txt", centroids)
 np.savetxt("pcaclusterAssment.txt", clusterAssment)
 
-dataset = pca(dataset, 2)
-visualization_result(dataset, clusterAssment)
+visualization_result()
 

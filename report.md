@@ -1,6 +1,5 @@
 # 机器学习实验报告—— Caltech-102 图像分类和聚类
 
-
 小组成员：
   彭宝云，16069009
   程鹏，    16069028
@@ -28,13 +27,11 @@ data/101_ObjectCategories/headphone/image_0028.jpg 0
 data/101_ObjectCategories/headphone/image_0030.jpg 0
 data/101_ObjectCategories/headphone/image_0011.jpg 0
 ...
-data/101_ObjectCategories/binocular/image_0017.jpg 101
 data/101_ObjectCategories/binocular/image_0026.jpg 101
 data/101_ObjectCategories/binocular/image_0025.jpg 101
 ``` 
 &emsp;&emsp;该 list 文件将被用在微调卷积网络中，指示输入的图片数据。
 训练集和测试集比例分别为 0.7 : 0.3 ，训练集用训练模型，测试集验证模型的分类性能。
-
 ### CNN对图像提取特征
  &emsp;&emsp;直接使用图像进行分类不可行，一般做法都是先使用特征提取方法对图像进行特征提取，形成特征向量后，再使用分类器来对特征向量进行训练和分类。传统常用的特征提取方法有Haar，HOG，SIFT 和 LBP， 这类方法提取的特征都是手工设计的。本实验中采用CNN来对图像进行特征提取。想比与传统的特征提取方法，CNN特征提取的特征是通过数据学习出来的，分类效果比SIFT等方法要好很多。
 
@@ -186,26 +183,33 @@ $$ C_i :  c_i = 1/|C_i| \sum_{x\in C_i}x$$
 
 &emsp;&emsp;k-means算法虽然简单快速，但是需要预先给出需要聚类的类别数目K；同时，算法需要随机确定聚类中心，而算法对初始聚类中心较为敏感。
 
-k-means算法原理分析
+聚类完成后，我们将聚类结果对应的图片文件名分别写入不同的聚类中心文件，如下格式：
+```
+data/101_ObjectCategories/water_lilly/image_0022.jpg
+data/101_ObjectCategories/elephant/image_0043.jpg
+data/101_ObjectCategories/crocodile_head/image_0010.jpg
+data/101_ObjectCategories/chair/image_0011.jpg
+data/101_ObjectCategories/chair/image_0062.jpg
+data/101_ObjectCategories/Motorbikes/image_0390.jpg
+data/101_ObjectCategories/Motorbikes/image_0358.jpg
+data/101_ObjectCategories/Motorbikes/image_0731.jpg
+data/101_ObjectCategories/Motorbikes/image_0150.jpg
+...
+data/101_ObjectCategories/kangaroo/image_0072.jpg
+data/101_ObjectCategories/kangaroo/image_0028.jpg
+data/101_ObjectCategories/kangaroo/image_0075.jpg
+data/101_ObjectCategories/kangaroo/image_0082.jpg
+data/101_ObjectCategories/kangaroo/image_0057.jpg
+```
+
+![Alt text](./kmeansResultExample.png)
+
 迭代次数：37
 时间：2360.26s
-3145 9144
-聚类后，我们将聚类结果对应的图片文件名分别写入不同的聚类中心文件，如下格式：
-```
-data/101_ObjectCategories/Motorbikes/image_0493.jpg
-data/101_ObjectCategories/Motorbikes/image_0797.jpg
-data/101_ObjectCategories/saxophone/image_0023.jpg
-data/101_ObjectCategories/saxophone/image_0003.jpg
-data/101_ObjectCategories/saxophone/image_0016.jpg
-data/101_ObjectCategories/saxophone/image_0009.jpg
-...
-data/101_ObjectCategories/hedgehog/image_0030.jpg
-data/101_ObjectCategories/hedgehog/image_0033.jpg
-data/101_ObjectCategories/hedgehog/image_0007.jpg
-data/101_ObjectCategories/hedgehog/image_0049.jpg
-data/101_ObjectCategories/hedgehog/image_0042.jpg
-data/101_ObjectCategories/hedgehog/image_0044.jpg
-```
+pca降维成128D数据，时间：677.0s
+迭代次数：44次
+
+&emsp;&emsp;通过观察聚类结果，我们发现有一些分属于不同两类的图像，却以较高频率出现在同一聚类类别中，如Motorbikes与Kangaroo，Faces_easy与Stop_signs。
 
 ### 谱聚类及实验结果
 
@@ -221,13 +225,33 @@ data/101_ObjectCategories/hedgehog/image_0044.jpg
 
 &emsp;&emsp;谱聚类优点在于只需要数据的相似度矩阵就可以了。性能 比传统的 K-means 要好。实际上谱聚类是在用特征向量的元素来表示原来的数据，并在这种“更好的表示形式”上进行 K-means 聚类。这种“更好的表示形式”是用 Laplacian Eigenmap 进行降维的后的结果，计算复杂度比 K-means 要小，在高维数据上优势尤为明显。
 
-## 如何评价聚类结果好坏？我已经聚类结果，可以根据聚类结果分别将对应的图片放在一个文件夹内，人眼判断
+### 聚类结果评价
 
-##总结与感悟
+&emsp;&emsp;聚类方法与有监督学习方法不一样，其评价方法因为缺少标签信息，因此评价方法与分类方法有些不一样。本实验中，为了定量评价聚类结果，我们采用了分类中的准确率，但是计算方法稍微不一样。我们将聚类正确样本定义为每一聚类中样本数量最多的类别当做该聚类正确样本，这样我们可以计算出聚类的“准确率”。
 
-&emsp;&emsp;碰到的问题有：训练集和测试集 均值文件不一致，使用CNN进行训练和测试时，准确率能达到91+%，但是用其提取fc7输出作为特征，并使用SVM进行分类时，出现训练得到的svm在测试集上的表现特别差（虽然使用训练集数据进行测试，表现较好）。这与之前未经修改的caffemodel提取特征进行svm 分类，差异特别大。出现这样的原因可能有：
-1. 惩罚因子设置过小，实验中设置的惩罚因子为C=1.0，在修改为C=20/100后，测试结果仍然很差。
-2. 在提取特征时，输入的train和test文件其均值文件不一致，导致输出的特征其分布也不一致。在采用同一个均值文件并使用train_dataset训练的网络进行提取特征后，测试结果为
-3. 数据的顺序发生了变化，使用了shuffle 参数（洗乱，但是label文件并没有变化。），果然是这个原因，原图片在转化成lmdb时，打乱顺序了，但是label文件没有改变。
+&emsp;&emsp;实验中，分别测试了直接经过CNN提取的4096D特征向量聚类结果，和经过PCA降维成128D特征的聚类结果，结果如下：
+
+| 方法 | 聚类正确样本 | 准确率 |
+|:-------:|:------: |:------:|
+| kmeans  | 3145   | 34.4%  |
+| pca-kmeans  | 3096  | 34.0%  |
+
+可以看出，两者性能基本一致。
+
+&emsp;&emsp;为了更加直观地查看聚类结果，我们将聚类后的簇投影到2D平面中，并将其可视化出来，如下：
+
+![Alt text](./clusterResult.png)
+
+其中，同一颜色代表属于相同类别的样本。可以看出，相同类别的样本经过聚类后，基本落在了同一空间范围内。
+
+##总结与展望
+
+&emsp;&emsp;对于图像分类或者聚类等视觉问题，一般都需要先进行特征提取。特征提取的好坏直接关系到最后性能的优劣。本实验中，采用经典CNN模型CaffeNet，并经过fine-tune后，来提取 caltech-102 图像集特征，再使用SVM kmeans和spectral clustering来完成分类和聚类。碰到的问题有：训练集和测试集 均值文件不一致，使用CNN进行训练和测试时，准确率能达到91+%，但是用其提取fc7输出作为特征，并使用SVM进行分类时，出现训练得到的svm在测试集上的表现特别差（虽然使用训练集数据进行测试，表现较好）。这与之前未经修改的caffemodel提取特征进行svm 分类，差异特别大。出现这样的原因可能有：
+
+1. 惩罚因子设置过小，实验中设置的惩罚因子为C=1.0，在修改为C=20和100后，测试结果仍然很差。因此排除这个原因
+2. 在提取特征时，输入的train和test文件其均值文件不一致，导致输出的特征其分布也不一致。因此采用同一个均值文件并使用train_dataset训练的网络进行提取特征后，测试结果仍然较差，因此排除这个原因
+3. 数据的顺序发生了变化，使用了shuffle 参数（洗乱，但是label文件并没有变化）。测试以后，果然是这个原因，原图片在转化成lmdb时，打乱顺序了，但是label文件没有改变。
+
+&emsp;&emsp;有监督学习，如分类器的性能评价较为容易计算，通常我们可以使用准确率，召回率或者 AUC等曲线来可视化。然而，对于无监督学习，如聚类方法，则不易评价。本实验中使用的两种方法，第一种是因为给定了标签，所以统计每一聚类中分属于每一类别最多数量之和占所有样本数量之和来计算其准确率；另一种方法，则是通过将聚类后的结果投影到二维平面中，再将其聚类的簇可视化出来，这种方法较为直观。如何更加有效且能定性地评价聚类结果好坏，是一个值得深入探讨的问题。另外，如何使用核方法来改进聚类的性能，也同样值得深入研究。
 
 ---------

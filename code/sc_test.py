@@ -6,13 +6,29 @@ import scipy.linalg as linalg
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
+# calculate Euclidean distance
+def euclDistance(vector1, vector2):
+	return sqrt(sum(power(vector2 - vector1, 2)))
+
+# init centroids with random samples
+def initCentroids(dataSet, k):
+	numSamples, dim = dataSet.shape
+	centroids = zeros((k, dim))
+	for i in range(k):
+		index = int(random.uniform(0, numSamples))
+		centroids[i, :] = dataSet[index, :]
+	return centroids
+
+def computeW(dataset):
+
+
+###input matrix W=(w_ij)compute D=diag(d1,...dn)
+"""and L=D-W
+"and Lbar=D^(-1/2)LD^(-1/2)
+"return Lbar
+"""
 def getNormLaplacian(W):
-	"""input matrix W=(w_ij)
-	"compute D=diag(d1,...dn)
-	"and L=D-W
-	"and Lbar=D^(-1/2)LD^(-1/2)
-	"return Lbar
-	"""
 	d=[np.sum(row) for row in W]
 	D=np.diag(d)
 	L=D-W
